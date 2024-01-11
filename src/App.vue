@@ -3,7 +3,7 @@
     <div class="container">
       <div class="row">
         <div class="col-12 pb-4">
-          <h1 class="text-white">Gerador de dados do analytics</h1>
+          <h1 class="text-white">Exportador de dados do analytics</h1>
         </div>
         <div class="col-12 col-lg-6">
           <form class="text-white">
@@ -18,7 +18,7 @@
                 placeholder="Ensira sua API key">
             </div>
             <div class="form-group pb-4">
-              <label for="inputState">State</label>
+              <label for="inputState">Modo de exportação:</label>
               <select v-model="selectedType" id="inputState" class="form-control">
                 <option v-for="type in types" :key="type">{{ type.name }}</option>
               </select>
@@ -35,7 +35,7 @@
             <div class="form-group pb-4">
               <label for="exampleInputPassword1">Data de fim:</label>
               <input 
-                v-model="dataRequest.start_date" 
+                v-model="dataRequest.end_date" 
                 class="form-control" 
                 placeholder="yyyy-mm-dd" 
                 v-mask="'####-##-##'"
@@ -44,7 +44,9 @@
             <button @click.prevent="request()" type="submit" class="btn btn-primary">Buscar</button>
           </form>
         </div>
-        <div class="col-12 col-lg-6">oi</div>
+        <div v-if="analyticsData.length > 0" class="col-12 col-lg-6">
+          <button @click.prevent="downloadCSV()" type="submit" class="btn btn-primary">Gerar CSV</button>  
+        </div>
       </div>
     </div>
   </div>
@@ -53,6 +55,7 @@
 <script setup>
 import { ref } from "vue"
 import http from './services/http'
+import Papa from 'papaparse'
 
 const dataRequest = ref({
   start_date: '2023-12-01',
@@ -80,12 +83,29 @@ const request = async () => {
     const data = await http.post('/', dataRequest.value)
     analyticsData.value.push(data)
   }
-
-  console.log(analyticsData.value)
-
+  console.log(analyticsData.value[0].data)
 }
 
+const downloadCSV = () => {
+  const csv = Papa.unparse(analyticsData.value[0].data);
 
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+
+  if (navigator.msSaveBlob) {
+    navigator.msSaveBlob(blob, 'data.csv');
+  } else {
+    const url = URL.createObjectURL(blob);
+
+    link.href = url;
+    link.setAttribute('download', 'data.csv');
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+}
 </script>
 
 <style>
